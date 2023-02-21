@@ -16,11 +16,13 @@ export class CellAttributesAdapter {
   private _remote: boolean;
   private _cell: joint.dia.Cell;
   private readonly _cellModel: RealTimeObject;
+  private _graphService: any;
 
-  constructor(cell: joint.dia.Cell, cellModel: RealTimeObject) {
+  constructor(cell: joint.dia.Cell, cellModel: RealTimeObject, graphSrvc: any) {
     this._remote = false;
     this._cell = cell;
     this._cellModel = cellModel;
+    this._graphService = graphSrvc;
   }
 
   public bind(): void {
@@ -54,6 +56,10 @@ export class CellAttributesAdapter {
     if (childEvent instanceof ObjectSetEvent) {
       const value = childEvent.value.value();
       path.push(childEvent.key);
+      
+      // console.log(`CellAttributesAdapter -> _onRemoteAttributeChanged: (path, value) -> (attrs/${path.join('/')},  ${JSON.stringify(value)})`);
+      this._graphService.remoteChanges.set(this._cell.attributes.id, {op: 'attr-change', data: {prop: 'attrs/'+ path.join('/'), value: value}} );
+
       this._cell.attr(path, value);
     } else if (childEvent instanceof StringSetValueEvent ||
       childEvent instanceof BooleanSetValueEvent ||
@@ -63,9 +69,11 @@ export class CellAttributesAdapter {
       childEvent instanceof ArraySetValueEvent
     ) {
       const value = childEvent.element.value();
+      // console.log(`CellAttributesAdapter -> _onRemoteAttributeChanged: (path, value) -> (attrs/${path.join()}, ${JSON.stringify(value)})`);
+      this._graphService.remoteChanges.set(this._cell.attributes.id, {op: 'attr-change', data: {prop: 'attrs/'+ path.join('/'), value: value}} );
+
       this._cell.attr(path, value);
     }
-
     this._remote = false;
   };
 

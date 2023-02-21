@@ -12,6 +12,7 @@ export class CellAdapter {
   private readonly _cellModel: RealTimeObject;
   private _cellAttributesAdapter: CellAttributesAdapter;
   private _cellValueAdapters: CellValueAdapter[];
+  private _graphService: any;
 
   /**
    * Creates a new CellAdapter. The Cell and RealTimeObject are not connected
@@ -23,11 +24,12 @@ export class CellAdapter {
    * @param cellModel
    *   The corresponding RealTimeObject in the RealTimeModel.
    */
-  constructor(cell: joint.dia.Cell, cellModel: RealTimeObject) {
+  constructor(cell: joint.dia.Cell, cellModel: RealTimeObject, graphSrvc: any) {
     this._cell = cell;
     this._cellModel = cellModel;
     this._cellAttributesAdapter = null;
     this._cellValueAdapters = [];
+    this._graphService = graphSrvc;
   }
 
   /**
@@ -38,7 +40,7 @@ export class CellAdapter {
     // the "attrs" property can be mutated with more granularity. So we handle the "attrs" with
     // a special class, and handle all other properties here.
 
-    this._cellAttributesAdapter = new CellAttributesAdapter(this._cell, this._cellModel);
+    this._cellAttributesAdapter = new CellAttributesAdapter(this._cell, this._cellModel, this._graphService);
     this._cellAttributesAdapter.bind();
 
     this._cell
@@ -70,6 +72,8 @@ export class CellAdapter {
         const value = e.element.get(key).value();
         this._cell.set(key, value);
         this._bindValue(key);
+
+        // console.log(`CellAdapter -> On SET: key, value -> ${key}, ${value}`);
       }
     });
    }
@@ -88,7 +92,7 @@ export class CellAdapter {
   }
 
   protected _bindValue(propName: string): void {
-    const cellValueAdapter: CellValueAdapter = new CellValueAdapter(this._cell, this._cellModel, propName);
+    const cellValueAdapter: CellValueAdapter = new CellValueAdapter(this._cell, this._cellModel, propName, this._graphService);
     cellValueAdapter.bind();
     this._cellValueAdapters.push(cellValueAdapter);
   }

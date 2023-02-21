@@ -9,14 +9,16 @@ export class CellValueAdapter {
   private readonly _eventName: string;
   private readonly _propertyName: string;
   private _valueElement: RealTimeElement;
+  private _graphService: any;
 
-  constructor(cell: joint.dia.Cell, cellModel: RealTimeObject, propertyName: string) {
+  constructor(cell: joint.dia.Cell, cellModel: RealTimeObject, propertyName: string, graphSrvc: any) {
     this._remote = false;
     this._cell = cell;
     this._cellModel = cellModel;
     this._eventName = `change:${propertyName}`;
     this._propertyName = propertyName;
     this._valueElement = null;
+    this._graphService = graphSrvc;
 
     this._onLocalGraphEvent = this._onLocalGraphEvent.bind(this);
     this._onRemotePropertySet = this._onRemotePropertySet.bind(this);
@@ -117,6 +119,15 @@ export class CellValueAdapter {
 
   private _onRemoteValue(event): void {
     this._remote = true;
+    if(this._propertyName !== 'ports')
+      // console.log(`CellValueAdapter -> _onRemoteValue: (propertyName, value) -> (${this._propertyName}, ${JSON.stringify(event.element.value())})`);
+    
+      if(
+      this._propertyName !== 'ports' && this._propertyName !== 'position' && this._propertyName !== 'z') {
+      if(this._propertyName !== 'target' || event.element.value().id !== undefined) {
+        this._graphService.remoteChanges.set(this._cell.attributes.id, {op: 'val-change', data: {prop: this._propertyName, value: event.element.value()}} );
+      }
+    }
     this._setCellValue(event.element.value());
     this._remote = false;
   };

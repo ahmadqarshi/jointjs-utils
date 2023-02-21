@@ -16,6 +16,7 @@ export class GraphAdapter {
   private readonly _graphObject: RealTimeObject;
   private readonly _graph: joint.dia.Graph;
   private _remote: boolean;
+  private graphService: any;
   private _cellsModel: RealTimeObject;
   private _cellAdapters: {[key: string]: CellAdapter};
   private _bound: boolean;
@@ -48,14 +49,15 @@ export class GraphAdapter {
    *   The Convergence RealTimeObject to bind to, or a RealTimeModel whose
    *   root element will be bound to.
    */
-  constructor(graph: joint.dia.Graph, object: RealTimeObject | RealTimeModel) {
+  constructor(graphSrvc: any /*joint.dia.Graph*/, object: RealTimeObject | RealTimeModel) {
     if (object instanceof RealTimeModel) {
       this._graphObject = object.root();
     } else {
       this._graphObject = object;
     }
 
-    this._graph = graph;
+    this.graphService = graphSrvc;
+    this._graph = graphSrvc.graph;
     this._remote = false;
     this._cellsModel = null;
     this._cellAdapters = {};
@@ -168,6 +170,7 @@ export class GraphAdapter {
     this._remote = true;
     const id = event.key;
     const newCellData = event.value.value();
+    this.graphService.remoteChanges.set(id, {"op": "add", data: newCellData});
     this._graph.addCell(newCellData);
     const newCell = this._graph.getCell(id);
     this._addCellAdapter(newCell);
@@ -184,6 +187,7 @@ export class GraphAdapter {
   private _onRemoteCellRemoved(event: ObjectRemoveEvent): void {
     this._remote = true;
     const key = event.key;
+    this.graphService.remoteChanges.set(key, {"op": "rem"});
     const cell = this._graph.getCell(key);
     this._removeCellAdapter(cell);
     cell.remove();
@@ -213,6 +217,7 @@ export class GraphAdapter {
     Object.keys(cellsData).forEach(id => {
       cells.push(cellsData[id]);
     });
+    // console.log(`_onRemoteCellsSet: cells -> ${JSON.stringify(cells)}`);
     this._graph.resetCells(cells);
 
     this._bindAllCells();
@@ -246,7 +251,7 @@ export class GraphAdapter {
 
   private _addCellAdapter(cell: any): void {
     const cellModel = this._cellsModel.get(cell.id) as RealTimeObject;
-    let adapter: CellAdapter = new CellAdapter(cell, cellModel);
+    let adapter: CellAdapter = new CellAdapter(cell, cellModel, this.graphService);
     adapter.bind();
     this._cellAdapters[cell.id] = adapter;
   }
